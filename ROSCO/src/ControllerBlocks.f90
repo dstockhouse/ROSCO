@@ -33,6 +33,7 @@ CONTAINS
         TYPE(ObjectInstances),      INTENT(INOUT)       :: objInst
         TYPE(ErrorVariables),       INTENT(INOUT)       :: ErrVar
 
+        REAL(DbKi)                 :: VS_RefSpdRaw   ! Temporary variable for applying LPF to the reference speed after it is generated
 
         ! ----- Pitch controller speed and power error -----
         
@@ -58,8 +59,13 @@ CONTAINS
         IF (CntrPar%VS_ControlMode == 2) THEN
             LocalVar%VS_RefSpd = (CntrPar%VS_TSRopt * LocalVar%We_Vw_F / CntrPar%WE_BladeRadius) * CntrPar%WE_GearboxRatio
         ELSEIF (CntrPar%VS_ControlMode == 3) THEN
-            LocalVar%VS_GenPwrF = LPFilter(LocalVar%VS_GenPwr, LocalVar%DT,CntrPar%VS_PwrFiltF, LocalVar%FP, LocalVar%iStatus, LocalVar%restart, objInst%instLPF) 
-            LocalVar%VS_RefSpd = (LocalVar%VS_GenPwrF/CntrPar%VS_Rgn2K)**(1./3.) ! Genspeed reference that doesnt depend on wind speed estimate (https://doi.org/10.2172/1259805)
+            LocalVar%VS_GenPwrF = LPFilter(LocalVar%VS_GenPwr, LocalVar%DT, CntrPar%VS_PwrFiltF, LocalVar%FP, LocalVar%iStatus, LocalVar%restart, objInst%instLPF) 
+            LocalVar%VS_RefSpd = (LocalVar%VS_GenPwrF/CntrPar%VS_Rgn2K)**(1./3.) ! Generator speed reference that doesn't depend on wind speed estimate (https://doi.org/10.2172/1259805)
+        ELSEIF (CntrPar%VS_ControlMode == 4) THEN
+            ! Use LocalVar%GenTq or LocalVar%GenTqMeas
+            VS_RefSpdRaw = (LocalVar%GenTq/CntrPar%VS_Rgn2K)**(1./2.) ! WSE-independent generator speed reference based on torque instead of power
+            VS_RefSpdRaw = min(VS_RefSpdRaw, (CntrPar%VS_RtPwr/(CntrPar%VS_GenEff/100.0))/LocalVar%GenTq) ! Above-rated underspeed reference
+            LocalVar%VS_RefSpd = LPFilter(VS_RefSpdRaw, LocalVar%DT, CntrPar%VS_PwrFiltF, LocalVar%FP, LocalVar%iStatus, LocalVar%restart, objInst%instLPF) 
         ELSE
             LocalVar%VS_RefSpd = CntrPar%VS_RefSpd
         ENDIF 
@@ -86,7 +92,7 @@ CONTAINS
         LocalVar%VS_RefSpd = max(LocalVar%VS_RefSpd, CntrPar%VS_MinOmSpd)
 
         ! Reference error
-        IF ((CntrPar%VS_ControlMode == 2) .OR. (CntrPar%VS_ControlMode == 3)) THEN
+        IF ((CntrPar%VS_ControlMode == 2) .OR. (CntrPar%VS_ControlMode == 3) .OR. (CntrPar%VS_ControlMode == 4)) THEN
             LocalVar%VS_SpdErr = LocalVar%VS_RefSpd - LocalVar%GenSpeedF
         ENDIF
 

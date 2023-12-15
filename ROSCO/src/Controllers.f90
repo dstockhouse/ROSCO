@@ -214,10 +214,15 @@ CONTAINS
         ENDIF
         
         ! Optimal Tip-Speed-Ratio tracking controller
-        IF ((CntrPar%VS_ControlMode == 2) .OR. (CntrPar%VS_ControlMode == 3)) THEN
+        IF ((CntrPar%VS_ControlMode == 2) .OR. (CntrPar%VS_ControlMode == 3) .OR. (CntrPar%VS_ControlMode == 4)) THEN
             ! Constant Power, update VS_MaxTq
             IF (CntrPar%VS_ConstPower == 1) THEN
                 LocalVar%VS_MaxTq = min((CntrPar%VS_RtPwr/(CntrPar%VS_GenEff/100.0))/LocalVar%GenSpeedF, CntrPar%VS_MaxTq)
+            END IF
+
+            ! Above rated underspeed, set a much higher maximum torque
+            IF (CntrPar%VS_ControlMode == 4) THEN
+                LocalVar%VS_MaxTq = 4*CntrPar%VS_ArSatTq
             END IF
 
             ! PI controller

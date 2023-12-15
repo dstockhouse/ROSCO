@@ -424,7 +424,7 @@ CONTAINS
         CALL ParseAry(  FileLines,  'VS_KP',        CntrPar%VS_KP,      CntrPar%VS_n,   accINFILE(1), ErrVar, .FALSE., UnEc)
         CALL ParseAry(  FileLines,  'VS_KI',        CntrPar%VS_KI,      CntrPar%VS_n,   accINFILE(1), ErrVar, .FALSE., UnEc)
         CALL ParseInput(FileLines,  'VS_TSRopt',    CntrPar%VS_TSRopt,                  accINFILE(1), ErrVar, CntrPar%VS_ControlMode < 2, UnEc)
-        CALL ParseInput(FileLines,  'VS_PwrFiltF',  CntrPar%VS_PwrFiltF,                accINFILE(1), ErrVar, CntrPar%VS_ControlMode .NE. 3, UnEc)
+        CALL ParseInput(FileLines,  'VS_PwrFiltF',  CntrPar%VS_PwrFiltF,                accINFILE(1), ErrVar, CntrPar%VS_ControlMode < 3, UnEc)
         IF (ErrVar%aviFAIL < 0) RETURN
 
         !------- Setpoint Smoother --------------------------------
@@ -577,7 +577,8 @@ CONTAINS
 
         CntrPar%PC_RtTq99 = CntrPar%VS_RtTq*0.99
         CntrPar%VS_MinOMTq = CntrPar%VS_Rgn2K*CntrPar%VS_MinOMSpd**2
-        CntrPar%VS_MaxOMTq = CntrPar%VS_Rgn2K*CntrPar%VS_RefSpd**2
+        ! CntrPar%VS_MaxOMTq = CntrPar%VS_Rgn2K*CntrPar%VS_RefSpd**2
+        CntrPar%VS_MaxOMTq = 4*CntrPar%VS_Rgn2K*CntrPar%VS_RefSpd**2
 
         ! Read open loop input, if desired
         IF (CntrPar%OL_Mode > 0) THEN
@@ -849,9 +850,9 @@ CONTAINS
         ENDIF
 
         ! VS_ControlMode
-        IF ((CntrPar%VS_ControlMode < 0) .OR. (CntrPar%VS_ControlMode > 3)) THEN
+        IF ((CntrPar%VS_ControlMode < 0) .OR. (CntrPar%VS_ControlMode > 4)) THEN
             ErrVar%aviFAIL = -1
-            ErrVar%ErrMsg  = 'VS_ControlMode must be 0, 1, 2, or 3.'
+            ErrVar%ErrMsg  = 'VS_ControlMode must be 0, 1, 2, 3, or 4.'
         ENDIF
 
         ! VS_ConstPower

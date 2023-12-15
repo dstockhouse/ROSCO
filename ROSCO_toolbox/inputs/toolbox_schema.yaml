@@ -128,9 +128,9 @@ properties:
             VS_ControlMode:     
                 type: number
                 minimum: 0
-                maximum: 3
+                maximum: 4
                 default: 2
-                description: Generator torque control mode in below rated conditions (0- no torque control, 1- k*omega^2 with PI transitions, 2- WSE TSR Tracking, 3- Power-based TSR Tracking)
+                description: Generator torque control mode in below rated conditions (0- no torque control, 1- k*omega^2 with PI transitions, 2- WSE TSR Tracking, 3- Power-based TSR Tracking, 4- Torque-based TSR Tracking + underspeed)
             VS_ConstPower:     
                 type: number
                 minimum: 0
@@ -558,7 +558,7 @@ properties:
                     VS_ControlMode:     
                         type: number
                         minimum: 0
-                        maximum: 3
+                        maximum: 4
                         description: Generator torque control mode in above rated conditions (0- no torque control, 1- k*omega^2 with PI transitions, 2- WSE TSR Tracking, 3- Power-based TSR Tracking)
                     VS_ConstPower:     
                         type: number
