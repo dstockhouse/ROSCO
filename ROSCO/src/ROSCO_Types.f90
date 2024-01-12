@@ -108,10 +108,12 @@ TYPE, PUBLIC :: ControlParameters
     INTEGER(IntKi)                :: SD_Mode                     ! Shutdown mode {0 - no shutdown procedure, 1 - pitch to max pitch at shutdown}
     REAL(DbKi)                    :: SD_MaxPit                   ! Maximum blade pitch angle to initiate shutdown, [rad]
     REAL(DbKi)                    :: SD_CornerFreq               ! Cutoff Frequency for first order low-pass filter for blade pitch angle, [rad/s]
-    INTEGER(IntKi)                :: Fl_Mode                     ! Floating specific feedback mode {0 - no nacelle velocity feedback, 1 - nacelle velocity feedback}
+    INTEGER(IntKi)                :: Fl_Mode                     ! Floating specific feedback mode to blade pitch {0 - no nacelle velocity feedback, 1 - nacelle velocity feedback}
+    INTEGER(IntKi)                :: FlTq_Mode                   ! Floating specific feedback mode to generator torque {0 - no nacelle velocity feedback, 1 - nacelle velocity feedback}
     INTEGER(IntKi)                :: Fl_n                        ! Number of Fl_Kp for gain scheduling
-    REAL(DbKi), DIMENSION(:), ALLOCATABLE     :: Fl_Kp                       ! Nacelle velocity proportional feedback gain [s]
-    REAL(DbKi), DIMENSION(:), ALLOCATABLE     :: Fl_U                        ! Wind speeds for scheduling Fl_Kp [m/s]
+    REAL(DbKi), DIMENSION(:), ALLOCATABLE     :: Fl_Kp           ! Nacelle velocity proportional feedback gain to blade pitch [s]
+    REAL(DbKi), DIMENSION(:), ALLOCATABLE     :: FlTq_Kp         ! Nacelle velocity proportional feedback gain to generator torque [Nm/(rad/s)]
+    REAL(DbKi), DIMENSION(:), ALLOCATABLE     :: Fl_U            ! Wind speeds for scheduling Fl_Kp [m/s]
     INTEGER(IntKi)                :: Flp_Mode                    ! Flap actuator mode {0 - off, 1 - fixed flap position, 2 - PI flap control}
     REAL(DbKi)                    :: Flp_Angle                   ! Fixed flap angle (degrees)
     REAL(DbKi)                    :: Flp_Kp                      ! PI flap control proportional gain
@@ -309,6 +311,7 @@ TYPE, PUBLIC :: LocalVariables
     REAL(DbKi)                    :: SS_DelOmegaF                ! Filtered setpoint shifting term defined in setpoint smoother [rad/s].
     REAL(DbKi)                    :: TestType                    ! Test variable, no use
     REAL(DbKi)                    :: Kp_Float                    ! Local, instantaneous Kp_Float, scheduled on wind speed, if desired
+    REAL(DbKi)                    :: Kp_FloatTq                  ! Local, instantaneous Kp_FloatTq, scheduled on wind speed, if desired
     REAL(DbKi)                    :: VS_MaxTq                    ! Maximum allowable generator torque [Nm].
     REAL(DbKi)                    :: VS_LastGenTrq               ! Commanded electrical generator torque the last time the controller was called [Nm].
     REAL(DbKi)                    :: VS_LastGenPwr               ! Commanded electrical generator torque the last time the controller was called [Nm].
@@ -325,7 +328,8 @@ TYPE, PUBLIC :: LocalVariables
     REAL(DbKi)                    :: VS_LastGenTrqF              ! Differentiated integrated wind speed quantity for estimation [m/s]
     REAL(DbKi)                    :: PRC_WSE_F                   ! Filtered wind speed estimate for power reference control
     LOGICAL                       :: SD                          ! Shutdown, .FALSE. if inactive, .TRUE. if active
-    REAL(DbKi)                    :: Fl_PitCom                   ! Shutdown, .FALSE. if inactive, .TRUE. if active
+    REAL(DbKi)                    :: Fl_PitCom                   ! Floating feedback signal from nacelle fore-aft velocity to blade pitch [rad]
+    REAL(DbKi)                    :: Fl_TqCom                    ! Floating feedback signal from nacelle fore-aft velocity to generator torque [Nm]
     REAL(DbKi)                    :: NACIMU_FA_AccF              ! None
     REAL(DbKi)                    :: FA_AccF                     ! None
     REAL(DbKi)                    :: PtfmTDX                     ! Platform motion -- Displacement TDX (m)')
@@ -398,6 +402,7 @@ TYPE, PUBLIC :: DebugVariables
     REAL(DbKi)                    :: NacIMU_FA_AccF              ! Filtered NacIMU_FA_Acc [rad/s]
     REAL(DbKi)                    :: FA_AccF                     ! Filtered FA_Acc [m/s]
     REAL(DbKi)                    :: Fl_PitCom                   ! Floating contribution to the pitch command [rad]
+    REAL(DbKi)                    :: Fl_TqCom                    ! Floating contribution to the generator torque command [Nm]
     REAL(DbKi)                    :: PC_MinPit                   ! Minimum blade pitch angle [rad]
     REAL(DbKi)                    :: axisTilt_1P                 ! Tilt component of coleman transformation, 1P
     REAL(DbKi)                    :: axisYaw_1P                  ! Yaw component of coleman transformation, 1P

@@ -62,6 +62,7 @@ class Controller():
         self.PS_Mode            = controller_params['PS_Mode']
         self.SD_Mode            = controller_params['SD_Mode']
         self.Fl_Mode            = controller_params['Fl_Mode']
+        self.FlTq_Mode          = controller_params['FlTq_Mode']
         self.TD_Mode            = controller_params['TD_Mode']
         self.Flp_Mode           = controller_params['Flp_Mode']
         self.PA_Mode            = controller_params['PA_Mode']
@@ -107,7 +108,7 @@ class Controller():
                 raise Exception(
                     'ROSCO_toolbox:controller: flp_kp_norm and flp_tau must be set if Flp_Mode > 0')
 
-        if self.Fl_Mode > 0:
+        if self.Fl_Mode > 0 or self.FlTq_Mode > 0:
             try:
                 self.twr_freq   = controller_params['twr_freq']
                 self.ptfm_freq  = controller_params['ptfm_freq']
@@ -119,6 +120,11 @@ class Controller():
                 self.Kp_float = controller_params['Kp_float']
             else:
                 self.Kp_float = np.array([0])
+
+            if 'Kp_floatTq' in controller_params:
+                self.Kp_floatTq = controller_params['Kp_floatTq']
+            else:
+                self.Kp_floatTq = np.array([0])
 
             self.tune_Fl = controller_params['tune_Fl']
 
@@ -381,6 +387,7 @@ class Controller():
             self.ps.min_pitch_saturation(self,turbine)
 
         # --- Floating feedback term ---
+        self.U_Fl = np.array([0.0]) # Will be overwritten if either floating feedback mode is active
 
         if self.Fl_Mode >= 1: # Floating feedback
 
@@ -396,7 +403,6 @@ class Controller():
             else:
                 self.U_Fl = np.array([turbine.v_rated * (1.05)])
 
-
             # If we haven't set Kp_float as a control parameter, we tune it automatically here
             if self.tune_Fl:
                 Kp_float = (dtau_dv/dtau_dbeta) * Ng 
@@ -410,25 +416,72 @@ class Controller():
                 self.Kp_float = np.array([self.Kp_float])
             if not np.shape(self.U_Fl):
                 self.U_Fl = np.array([self.U_Fl])
-            
+
             # Check size of Kp_float and U_Fl
             if len(self.Kp_float) != len(self.U_Fl):
                 raise Exception('The sizes of Kp_float and U_Fl are not equal, please check your controller_params')
 
+            # Turn on the notch filter if floating and not already on
+            if not self.F_NotchType:
+                self.F_NotchType = 2      
 
+            # And check for .yaml input inconsistencies
+            if self.twr_freq == 0.0 or self.ptfm_freq == 0.0:
+                print('WARNING: twr_freq and ptfm_freq should be defined for floating turbine control!!')
+
+        else:
+            self.Kp_float = np.array([0.0])
+
+        if self.FlTq_Mode >= 1: # Generator torque floating feedback
+
+            # Wind speed gain scheduling
+            self.U_Fl = self.controller_params['U_Fl']
+            if self.U_Fl:  # default is [], only have one Fl_Kp
+                if type(self.U_Fl) == str:
+                    if self.U_Fl == 'all':  
+                        # Mod by A. Wright: get the array of Kp_float values at the values of v-above rated (see self.v_for_gs calculated around line 344).
+                        self.U_Fl = self.v_for_gs
+                    else:
+                        raise Exception("Invalid entry in controller_params for U_Fl, please see schema")
+            else:
+                self.U_Fl = np.array([turbine.v_rated * (1.05)])
+
+
+            # If we haven't set Kp_floatTq as a control parameter, we tune it automatically here
+            if self.tune_Fl:
+                Kp_floatTq = dtau_dv # * Ng / Ng
+                if self.FlTq_Mode == 2:
+                    Kp_floatTq *= turbine.TowerHt      
+                f_kp     = interpolate.interp1d(v,Kp_floatTq)
+                self.Kp_floatTq = f_kp(self.U_Fl)   # get Kp at v_rated + 0.5 m/s
+
+            # Make arrays if not
+            if not np.shape(self.Kp_floatTq):
+                self.Kp_floatTq = np.array([self.Kp_floatTq])
+            if not np.shape(self.U_Fl):
+                self.U_Fl = np.array([self.U_Fl])
+
+            # Check size of Kp_floatTq and U_Fl
+            if len(self.Kp_floatTq) != len(self.U_Fl):
+                raise Exception('The sizes of Kp_floatTq and U_Fl are not equal, please check your controller_params')
 
             # Turn on the notch filter if floating and not already on
             if not self.F_NotchType:
                 self.F_NotchType = 2      
-                      
+
             # And check for .yaml input inconsistencies
             if self.twr_freq == 0.0 or self.ptfm_freq == 0.0:
                 print('WARNING: twr_freq and ptfm_freq should be defined for floating turbine control!!')
-            
+
         else:
-            self.Kp_float = np.array([0.0])
-            self.U_Fl = np.array([0.0])
-        
+            self.Kp_floatTq = np.array([0.0])
+
+        # If using both blade pitch and generator torque for parallel compensation, then share the load equally
+        # DBS: In future work, have tuning options to allow the user to choose how to manage this exchange
+        if self.Fl_Mode > 0 and self.FlTq_Mode > 0:
+            self.Kp_float = self.Kp_float / 2.0
+            self.KpTq_float = self.KpTq_float / 2.0
+
         # Flap actuation 
         if self.Flp_Mode >= 1:
             self.flp_angle = 0.0
