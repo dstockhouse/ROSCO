@@ -326,6 +326,52 @@ class Turbine():
         self.Ct_table = Ct 
         self.Cq_table = Cq
 
+
+    # Load rotor performance data from CCBlade
+    def load_from_ccblade_3d(self, ws_range=[0, 30], ws_step=0.5, omega_range=[0, 2], omega_step=0.05, pitch_range=[-5, 30], pitch_step=1):
+        '''
+        Loads rotor performance information by running cc-blade aerodynamic analysis. Designed to work with Aerodyn15 blade input files.
+
+        Parameters:
+        -----------
+
+        '''
+        from wisdem.ccblade.ccblade import CCAirfoil, CCBlade
+
+        print('Loading rotor performance data from CC-Blade.')
+
+        # Load blade information if it isn't already
+        try:
+            isinstance(self.cc_rotor,object)
+        except(AttributeError):
+            self.load_blade_info()
+
+        # Generate the look-up tables, mesh the grid and flatten the arrays for cc_rotor aerodynamic analysis
+        ws_list = np.arange(ws_range[0], ws_range[1] + ws_step, ws_step)
+        omega_list = np.arange(omega_range[0], omega_range[1] + omega_step, omega_step)
+        pitch_list = np.arange(pitch_range[0], pitch_range[1] + pitch_step, pitch_step)
+        ws_mesh, omega_mesh, pitch_mesh = np.meshgrid(ws_list, omega_list, pitch_list)
+        ws_flat = ws_mesh.flatten()
+        omega_flat = omega_mesh.flatten()
+        pitch_flat = pitch_mesh.flatten()
+
+
+        # Get values from cc-blade
+        print('Running CCBlade aerodynamic analysis, this may take a minute...')
+        outputs, derivs = self.cc_rotor.evaluate(ws_flat, omega_flat, pitch_flat, coefficients=True)
+        CP = outputs['CP']
+        CT = outputs['CT']
+        CQ = outputs['CQ']
+        print('CCBlade aerodynamic analysis run successfully.')
+
+        # Reshape Cp, Ct and Cq
+        Cp = np.reshape(CP, (len(ws_list), len(omega_list), len(pitch_list)))
+        Ct = np.reshape(CT, (len(ws_list), len(omega_list), len(pitch_list)))
+        Cq = np.reshape(CQ, (len(ws_list), len(omega_list), len(pitch_list)))
+
+        # Return grid data and performanc tables
+        return Cp, Ct, Cq, ws_list, omega_list, pitch_list
+
     
     def generate_rotperf_fast(self, openfast_path, FAST_runDirectory=None, run_BeamDyn=False,
                               debug_level=1, run_type='multi'):
