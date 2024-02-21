@@ -252,7 +252,7 @@ CONTAINS
 
         ! Add floating feedback to torque signal
         IF (CntrPar%FlTq_Mode > 0) THEN
-            LocalVar%Fl_TqCom = FloatingFeedback(LocalVar, CntrPar, objInst, ErrVar)
+            LocalVar%Fl_TqCom = FloatingFeedbackTq(LocalVar, CntrPar, objInst, ErrVar)
             DebugVar%FL_TqCom = LocalVar%Fl_TqCom
             LocalVar%GenTq    = LocalVar%GenTq + LocalVar%Fl_TqCom
         ENDIF
@@ -604,16 +604,16 @@ CONTAINS
         ! Gain scheduling
         LocalVar%Kp_FloatTq = interp1d(CntrPar%Fl_U,CntrPar%FlTq_Kp,LocalVar%WE_Vw_F,ErrVar)       ! Schedule based on WSE
 
-        ! Define FlTq saturation limit
+        ! Define FlTq saturation limit (TODO make this based on the actual parameter)
         FlTq_sat_lim = CntrPar%VS_RtTq * 2.0_DbKi
         
         ! Calculate floating contribution to pitch command
         FA_vel = PIController(LocalVar%FA_AccF, 0.0_DbKi, 1.0_DbKi, -FlTq_sat_lim, FlTq_sat_lim, LocalVar%DT, 0.0_DbKi, LocalVar%piP, LocalVar%restart, objInst%instPI)
         NacIMU_FA_vel = PIController(LocalVar%NacIMU_FA_AccF, 0.0_DbKi, 1.0_DbKi, -FlTq_sat_lim, FlTq_sat_lim, LocalVar%DT, 0.0_DbKi, LocalVar%piP, LocalVar%restart, objInst%instPI)
 ! Mod made by A. Wright: use the gain scheduled value of KPfloat in the floating fb equ's below (instead of the old value of CntrPar%Fl_Kp), for either value of CntrPar%Fl_Mode...        
-        if (CntrPar%Fl_Mode == 1) THEN
+        if (CntrPar%FlTq_Mode == 1) THEN
             FloatingFeedbackTq = (0.0_DbKi - FA_vel) * LocalVar%Kp_FloatTq ! Mod made by A. Wright: use the gain scheduled value of KPfloat in the floating fb equ's below (instead of the old value of CntrPar%Fl_Kp), for either value of CntrPar%Fl_Mode...
-        ELSEIF (CntrPar%Fl_Mode == 2) THEN
+        ELSEIF (CntrPar%FlTq_Mode == 2) THEN
             FloatingFeedbackTq = (0.0_DbKi - NacIMU_FA_vel) * LocalVar%Kp_FloatTq ! Mod made by A. Wright: use the gain scheduled value of KPfloat in the floating fb equ's below (instead of the old value of CntrPar%Fl_Kp), for either value of CntrPar%Fl_Mode...
         END IF
 

@@ -372,15 +372,40 @@ properties:
                 items: 
                     type: number
             tune_Fl:
-                type: boolean
-                description: Whether to automatically tune Kp_float
-                default: True
+                type: number
+                description: Configuration to automatically tune Kp_float (0 - Disable auto-tuning, 1 - Auto-tune based on "parallel" compensation, 2 - Auto-tune based on platform pitch damping)
+                minimum: 0
+                maximum: 2
+                default: 1
+            tune_FlTq:
+                type: number
+                description: Configuration to automatically tune Kp_floatTq (0 - Disable auto-tuning, 1 - Auto-tune based on parallel compensation)
+                minimum: 0
+                maximum: 1
+                default: 1
             U_Fl:
                 type: [array, string, number]
                 description: List of wind speeds for tuning floating feedback, or "all" for all above-rated wind speeds
                 default: []
                 items:
                     type: number
+            U_FlKp:
+                type: [array,number]
+                description: List of wind speeds for tuning torque floating feedback
+                unit: none
+                items:
+                    type: number
+                    minimum: 0
+                default: [12.0]
+            FlTq_scale:
+                type: [array,number]
+                description: List of scale parameters for scheduled tuning of torque floating feedback
+               unit: none
+                items:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+                default: [0.0]
             zeta_flp:                        
                 type: number
                 minimum: 0

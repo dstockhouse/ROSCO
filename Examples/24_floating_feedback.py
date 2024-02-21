@@ -1,5 +1,5 @@
 '''
------------ 23_structural_control ------------------------
+----------- 24_floating_feedback ------------------------
 Run openfast with ROSCO and all the floating feedback methods
 -----------------------------------------------
 
@@ -61,7 +61,6 @@ def main():
                  param_file=param_file, 
                  txt_filename=path_params['rotor_performance_filename'])
 
-
     # Method 2: Automated tuning, all wind speeds
     controller_params_2 = controller_params_1.copy()
     controller_params_2['U_Fl'] = 'all'
@@ -100,7 +99,7 @@ def main():
     write_DISCON(turbine,controller,
                  param_file=os.path.join(run_dir,'DISCON_Fl_4.IN'), 
                  txt_filename=path_params['rotor_performance_filename'])
-    
+
     # Read all DISCONs and make into case_inputs
     case_inputs = {}
     discon_lists = {}  

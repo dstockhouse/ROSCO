@@ -476,6 +476,13 @@ class Controller():
         else:
             self.Kp_floatTq = np.array([0.0])
 
+        # Ensure lengths are correct, if not then repeat the last value until they are
+        if len(self.Kp_float) < len(self.U_Fl):
+            self.Kp_float = np.append(self.Kp_float, np.repeat(self.Kp_float[-1], len(self.U_Fl) - len(self.Kp_float)))
+        if len(self.Kp_floatTq) < len(self.U_Fl):
+            self.Kp_floatTq = np.append(self.Kp_floatTq, np.repeat(self.Kp_floatTq[-1], len(self.U_Fl) - len(self.Kp_floatTq)))
+
+
         # If using both blade pitch and generator torque for parallel compensation, then share the load equally
         # DBS: In future work, have tuning options to allow the user to choose how to manage this exchange
         if self.Fl_Mode > 0 and self.FlTq_Mode > 0:
